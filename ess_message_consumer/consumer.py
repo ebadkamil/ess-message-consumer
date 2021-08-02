@@ -90,10 +90,12 @@ class EssMessageConsumer:
                 logger.error(f"Error: {msg.error()}")
             else:
                 value = msg.value()
-                if value[4:8] in self._message_handler:
-                    self._message_handler[value[4:8]](value)
+                type = value[4:8]
+                if type in self._message_handler:
+                    self._message_handler[type](value)
                 else:
-                    logger.error(f"Unrecognized serialized type message: {value}")
+                    logger.error(
+                        f"Unrecognized serialized type {type}: message: {value}")
 
     def _on_fw_finished_writing_message(self, message):
         logger.debug(deserialise_wrdn(message))
