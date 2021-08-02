@@ -38,7 +38,7 @@ def validate_broker(url):
 logger = get_logger("file-writer-messages")
 
 
-class FWMessageConsumer:
+class EssMessageConsumer:
     def __init__(self, broker: str):
         validate_broker(broker)
         self.broker = broker
@@ -141,7 +141,7 @@ def start_consumer():
 
     topics = [x.strip() for x in args.topics.split(",") if x.strip()]
     broker = args.broker
-    consumer = FWMessageConsumer(broker)
+    consumer = EssMessageConsumer(broker)
     consumer.subscribe(topics)
 
 
