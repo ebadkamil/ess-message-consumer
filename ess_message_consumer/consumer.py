@@ -51,10 +51,10 @@ class EssMessageConsumer:
 
         self._message_handler = {
             b"x5f2": self._on_status_message,
-            b"answ": self._on_response_message,
-            b"wrdn": self._on_stopped_message,
-            b"6s4t": self._on_stop_message,
-            b"pl72": self._on_start_message,
+            b"answ": self._on_fw_command_response_message,
+            b"wrdn": self._on_fw_finished_writing_message,
+            b"6s4t": self._on_run_stop_message,
+            b"pl72": self._on_run_start_message,
             b"f142": self._on_log_data,
             b"ev42": self._on_event_data,
             b"hs00": self._on_histogram_data,
@@ -95,19 +95,19 @@ class EssMessageConsumer:
                 else:
                     logger.error(f"Unrecognized serialized type message: {value}")
 
-    def _on_stopped_message(self, message):
+    def _on_fw_finished_writing_message(self, message):
         logger.debug(deserialise_wrdn(message))
 
-    def _on_response_message(self, message):
+    def _on_fw_command_response_message(self, message):
         logger.debug(deserialise_answ(message))
 
     def _on_status_message(self, message):
         logger.debug(deserialise_x5f2(message))
 
-    def _on_start_message(self, message):
+    def _on_run_start_message(self, message):
         logger.debug(deserialise_pl72(message))
 
-    def _on_stop_message(self, message):
+    def _on_run_stop_message(self, message):
         logger.debug(deserialise_6s4t(message))
 
     def _on_log_data(self, message):

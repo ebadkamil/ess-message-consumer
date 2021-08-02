@@ -1,15 +1,16 @@
 # ESS command-line message consumer
   - Kafka commandline message consumer specific to handle ESS flatbuffer messages
     of types
-    - 6s4t
-    - answ
-    - ev42
-    - f142
-    - hs00
-    - pl72
-    - wrdn
-    - x5f2
 
+    |name|description|
+    |----|-----------|
+    |pl72|Run start|
+    |6s4t|Run stop|
+    |f142|Log data|
+    |ev42|Event data|
+    |x5f2|Status messages|
+    |answ|File-writer command response|
+    |wrdn|File-writer finished writing|
 Installing
 ==========
 
