@@ -1,12 +1,10 @@
 import os.path as osp
 import re
-import sys
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 
 
 def find_version():
-    with open(osp.join('analysis', '__init__.py'), 'r') as f:
+    with open(osp.join('ess_message_consumer', '__init__.py'), 'r') as f:
         match = re.search(r'^__version__ = "(\d+\.\d+\.\d+)"', f.read(), re.M)
         if match is not None:
             return match.group(1)
@@ -26,6 +24,7 @@ setup(name="ess-message-consumer",
       },
       install_requires=[
            'confluent_kafka >= 1.7.0',
+           'ess-streaming_data_types>=0.10.0'
       ],
       extras_require={
         'test': [

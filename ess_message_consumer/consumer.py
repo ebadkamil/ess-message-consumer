@@ -120,7 +120,7 @@ class FWMessageConsumer:
         logger.debug(deserialise_ev42(message))
 
 
-if __name__ == "__main__":
+def start_consumer():
     parser = argparse.ArgumentParser(prog="FileWriter Message consumer")
     parser.add_argument(
         "-t",
@@ -143,3 +143,7 @@ if __name__ == "__main__":
     broker = args.broker
     consumer = FWMessageConsumer(broker)
     consumer.subscribe(topics)
+
+
+if __name__ == "__main__":
+    start_consumer
