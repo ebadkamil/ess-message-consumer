@@ -5,6 +5,7 @@ import uuid
 from typing import List
 
 from confluent_kafka import Consumer
+from rich.logging import RichHandler
 from streaming_data_types import (
     deserialise_6s4t,
     deserialise_answ,
@@ -19,12 +20,11 @@ from streaming_data_types import (
 
 def get_logger(name, level: int = logging.DEBUG):
     logger = logging.getLogger(name)
-    console_handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s - %(message)s")
-    console_handler.setFormatter(formatter)
+    console_handler = RichHandler(show_level=False, show_path=False)
 
     logger.addHandler(console_handler)
     logger.setLevel(level)
+
     return logger
 
 

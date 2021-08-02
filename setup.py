@@ -24,7 +24,8 @@ setup(name="ess-message-consumer",
       },
       install_requires=[
            'confluent_kafka >= 1.7.0',
-           'ess-streaming_data_types>=0.10.0'
+           'ess-streaming_data_types>=0.10.0',
+           'rich>=10.6.0'
       ],
       extras_require={
         'test': [
