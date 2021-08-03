@@ -1,15 +1,12 @@
 import argparse
-import logging
 import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime
-from functools import wraps
-from threading import Lock, Thread
+from threading import Lock
 from typing import List
 
 from confluent_kafka import Consumer
-from rich.logging import RichHandler
 from streaming_data_types import (
     deserialise_6s4t,
     deserialise_answ,
@@ -22,16 +19,7 @@ from streaming_data_types import (
 )
 
 from ess_message_consumer.console_output import Console
-
-
-def get_logger(name: str, level: int = logging.DEBUG):
-    logger = logging.getLogger(name)
-    console_handler = RichHandler(show_level=False, show_path=False)
-
-    logger.addHandler(console_handler)
-    logger.setLevel(level)
-
-    return logger
+from ess_message_consumer.utils import get_logger, run_in_thread
 
 
 def validate_broker(url: str):
@@ -44,22 +32,13 @@ def validate_broker(url: str):
 logger = get_logger("file-writer-messages")
 
 
-def run_in_thread(original):
-    @wraps(original)
-    def wrapper(*args, **kwargs):
-        t = Thread(target=original, args=args, kwargs=kwargs, daemon=True)
-        t.start()
-        return t
-
-    return wrapper
-
-
 class EssMessageConsumer:
-    def __init__(self, broker: str):
+    def __init__(self, broker: str, topics: List[str]):
         validate_broker(broker)
-        self.broker = broker
+        self._broker = broker
+        self._topics = topics
         conf = {
-            "bootstrap.servers": self.broker,
+            "bootstrap.servers": self._broker,
             "auto.offset.reset": "latest",
             "group.id": uuid.uuid4(),
         }
@@ -76,26 +55,30 @@ class EssMessageConsumer:
             b"hs00": self._on_histogram_data,
         }
         self._msg_lock = Lock()
+        self._messages = {topic: OrderedDict() for topic in self._topics}
+        self._console = Console(topics, self._messages)
+
+    @property
+    def console(self):
+        return self._console
 
     @property
     def consumer(self):
         return self._consumer
 
-    def subscribe(self, topics: List[str]):
-        if not topics:
+    def subscribe(self):
+        if not self._topics:
             logger.error("Empty topic list")
             return
         # Remove all the subscribed topics
         self._consumer.unsubscribe()
 
         existing_topics = self._consumer.list_topics().topics
-        for topic in topics:
+        for topic in self._topics:
             if topic not in existing_topics:
                 raise RuntimeError(f"Provided topic {topic} does not exist")
 
-        self._messages = {topic: OrderedDict() for topic in topics}
-        self.console = Console(topics, self._messages)
-        self._consumer.subscribe(topics)
+        self._consumer.subscribe(self._topics)
         self._consume()
         self._update_console()
 
@@ -107,7 +90,6 @@ class EssMessageConsumer:
             if msg is None:
                 continue
             if msg.error():
-                print(f"Error: {msg.error()}")
                 logger.error(f"Error: {msg.error()}")
             else:
                 value = msg.value()
@@ -150,7 +132,7 @@ class EssMessageConsumer:
             self._messages[topic][str(key)] = str(value)
 
     def _update_console(self):
-        self.console.update_console()
+        self._console.update_console()
 
 
 def start_consumer():
@@ -174,8 +156,8 @@ def start_consumer():
 
     topics = [x.strip() for x in args.topics.split(",") if x.strip()]
     broker = args.broker
-    consumer = EssMessageConsumer(broker)
-    consumer.subscribe(topics)
+    consumer = EssMessageConsumer(broker, topics)
+    consumer.subscribe()
 
 
 if __name__ == "__main__":

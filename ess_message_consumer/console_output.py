@@ -12,26 +12,26 @@ from rich.table import Table
 
 class TopicConsoleRenderer:
     def __init__(self, topic, container):
-        self.container = container
-        self.topic = topic
+        self._container = container
+        self._topic = topic
 
-        self.table = Table(expand=True)
-        self.table.add_column("Timestamp", style="green", justify="center")
-        self.table.add_column("Message", style="blue", justify="left")
+        self._table = Table(expand=True)
+        self._table.add_column("Timestamp", style="green", justify="center")
+        self._table.add_column("Message", style="blue", justify="left")
 
     def __rich__(self) -> Panel:
-        if self.container:
-            items = self.container.popitem(last=False)
-            self.table.add_row(*items)
+        if self._container:
+            items = self._container.popitem(last=False)
+            self._table.add_row(*items)
 
         return Panel(
             Align.center(
-                RenderGroup(self.table),
+                RenderGroup(self._table),
                 vertical="middle",
             ),
             box=box.ROUNDED,
             padding=(1, 2),
-            title=f"[b red] Messages from Topic: {self.topic}",
+            title=f"[b red] Messages from Topic: {self._topic}",
             border_style="bright_blue",
         )
 
@@ -50,15 +50,15 @@ class Header:
 
 class Console:
     def __init__(self, topics, message_container):
-        self.layout = self.make_layout(topics)
-        self.layout["header"].update(Header())
+        self._layout = self.make_layout(topics)
+        self._layout["header"].update(Header())
         for topic in topics:
-            self.layout[topic].update(
+            self._layout[topic].update(
                 TopicConsoleRenderer(topic, message_container[topic])
             )
 
     def update_console(self):
-        with Live(self.layout, refresh_per_second=1, screen=True):
+        with Live(self._layout, refresh_per_second=1, screen=True):
             while True:
                 pass
 
