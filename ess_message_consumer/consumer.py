@@ -18,7 +18,7 @@ from streaming_data_types import (
 )
 
 
-def get_logger(name, level: int = logging.DEBUG):
+def get_logger(name: str, level: int = logging.DEBUG):
     logger = logging.getLogger(name)
     console_handler = RichHandler(show_level=False, show_path=False)
 
@@ -28,7 +28,7 @@ def get_logger(name, level: int = logging.DEBUG):
     return logger
 
 
-def validate_broker(url):
+def validate_broker(url: str):
     if ":" not in url:
         raise RuntimeError(
             f"Unable to parse URL {url}, should be of form localhost:9092"
@@ -95,7 +95,8 @@ class EssMessageConsumer:
                     self._message_handler[type](value)
                 else:
                     logger.error(
-                        f"Unrecognized serialized type {type}: message: {value}")
+                        f"Unrecognized serialized type {type}: message: {value}"
+                    )
 
     def _on_fw_finished_writing_message(self, message):
         logger.debug(deserialise_wrdn(message))
