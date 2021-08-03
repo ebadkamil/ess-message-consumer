@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import List
 
@@ -22,7 +23,8 @@ class TopicConsoleRenderer:
     def __rich__(self) -> Panel:
         if self._container:
             items = self._container.popitem(last=False)
-            self._table.add_row(*items)
+            timestamp, value = str(items[0]), str(items[1])
+            self._table.add_row(timestamp, value)
 
         return Panel(
             Align.center(
@@ -48,7 +50,7 @@ class Header:
         return Panel(grid, style="white on blue")
 
 
-class Console:
+class RichConsole:
     def __init__(self, topics, message_container):
         self._layout = self.make_layout(topics)
         self._layout["header"].update(Header())
@@ -74,3 +76,19 @@ class Console:
         args = [Layout(name=topic) for topic in topics]
         layout["main"].split(*args)
         return layout
+
+
+class NormalConsole:
+    def __init__(self, topics, message_container, logger):
+        self._message_container = message_container
+        self._log = logger
+
+    def update_console(self):
+        while True:
+            time.sleep(1)
+            if self._message_container:
+                for key in self._message_container:
+                    container = self._message_container[key]
+                    if container:
+                        items = container.popitem(last=False)
+                        self._log.error(items[1])

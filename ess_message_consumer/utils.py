@@ -2,6 +2,8 @@ import logging
 from functools import wraps
 from threading import Thread
 
+from rich.logging import RichHandler
+
 
 def run_in_thread(original):
     @wraps(original)
@@ -13,13 +15,16 @@ def run_in_thread(original):
     return wrapper
 
 
-def get_logger(name: str, level: int = logging.DEBUG):
+def get_logger(name: str, level: int = logging.DEBUG, rich_console: bool = False):
     logger = logging.getLogger(name)
-    console_handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        "%(asctime)s - %(filename)s - %(levelname)s - %(message)s"
-    )
-    console_handler.setFormatter(formatter)
+    if rich_console:
+        console_handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            "%(asctime)s - %(filename)s - %(levelname)s - %(message)s"
+        )
+        console_handler.setFormatter(formatter)
+    else:
+        console_handler = RichHandler(show_level=False, show_path=False)
 
     logger.addHandler(console_handler)
     logger.setLevel(level)

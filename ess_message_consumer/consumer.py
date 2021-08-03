@@ -18,17 +18,17 @@ from streaming_data_types import (
     deserialise_x5f2,
 )
 
-from ess_message_consumer.console_output import Console
+from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.utils import get_logger, run_in_thread, validate_broker
-
-logger = get_logger("file-writer-messages")
 
 
 class EssMessageConsumer:
-    def __init__(self, broker: str, topics: List[str]):
+    def __init__(self, broker: str, topics: List[str], logger, rich_console=False):
         validate_broker(broker)
         self._broker = broker
         self._topics = topics
+        self.log = logger
+
         conf = {
             "bootstrap.servers": self._broker,
             "auto.offset.reset": "latest",
@@ -48,7 +48,11 @@ class EssMessageConsumer:
         }
         self._msg_lock = Lock()
         self._messages = {topic: OrderedDict() for topic in self._topics}
-        self._console = Console(topics, self._messages)
+
+        if rich_console:
+            self._console = RichConsole(topics, self._messages)
+        else:
+            self._console = NormalConsole(topics, self._messages, logger)
 
     @property
     def console(self):
@@ -60,7 +64,7 @@ class EssMessageConsumer:
 
     def subscribe(self):
         if not self._topics:
-            logger.error("Empty topic list")
+            self.log.error("Empty topic list")
             return
         # Remove all the subscribed topics
         self._consumer.unsubscribe()
@@ -82,7 +86,7 @@ class EssMessageConsumer:
             if msg is None:
                 continue
             if msg.error():
-                logger.error(f"Error: {msg.error()}")
+                self.log.error(f"Error: {msg.error()}")
             else:
                 value = msg.value()
                 topic = msg.topic()
@@ -90,44 +94,46 @@ class EssMessageConsumer:
                 if type in self._message_handler:
                     self._message_handler[type](topic, value)
                 else:
-                    logger.error(
+                    self.log.error(
                         f"Unrecognized serialized type {type}: message: {value}"
                     )
 
     def _on_fw_finished_writing_message(self, topic, message):
-        self._update_message_table(topic, deserialise_wrdn(message))
+        self._update_message_container(topic, deserialise_wrdn(message))
 
     def _on_fw_command_response_message(self, topic, message):
-        self._update_message_table(topic, deserialise_answ(message))
+        self._update_message_container(topic, deserialise_answ(message))
 
     def _on_status_message(self, topic, message):
-        self._update_message_table(topic, deserialise_x5f2(message))
+        self._update_message_container(topic, deserialise_x5f2(message))
 
     def _on_run_start_message(self, topic, message):
-        self._update_message_table(topic, deserialise_pl72(message))
+        self._update_message_container(topic, deserialise_pl72(message))
 
     def _on_run_stop_message(self, topic, message):
-        self._update_message_table(topic, deserialise_6s4t(message))
+        self._update_message_container(topic, deserialise_6s4t(message))
 
     def _on_log_data(self, topic, message):
-        self._update_message_table(topic, deserialise_f142(message))
+        self._update_message_container(topic, deserialise_f142(message))
 
     def _on_histogram_data(self, topic, message):
-        self._update_message_table(topic, deserialise_hs00(message))
+        self._update_message_container(topic, deserialise_hs00(message))
 
     def _on_event_data(self, topic, message):
-        self._update_message_table(topic, deserialise_ev42(message))
+        self._update_message_container(topic, deserialise_ev42(message))
 
-    def _update_message_table(self, topic, value):
+    def _update_message_container(self, topic, value):
         with self._msg_lock:
             key = datetime.now().ctime()
-            self._messages[topic][str(key)] = str(value)
+            self._messages[topic][key] = value
+            # print("Hello ", self._messages)
 
     def _update_console(self):
         self._console.update_console()
 
 
 def start_consumer():
+
     parser = argparse.ArgumentParser(prog="FileWriter Message consumer")
     parser.add_argument(
         "-t",
@@ -144,11 +150,19 @@ def start_consumer():
         default="localhost:9092",
         help="Kafka broker address",
     )
+    parser.add_argument(
+        "--rich_console", action="store_true", help="To get rich layout"
+    )
+
     args = parser.parse_args()
 
     topics = [x.strip() for x in args.topics.split(",") if x.strip()]
     broker = args.broker
-    consumer = EssMessageConsumer(broker, topics)
+    rich_console = args.rich_console
+
+    logger = get_logger("file-writer-messages", rich_console)
+
+    consumer = EssMessageConsumer(broker, topics, logger, rich_console=rich_console)
     consumer.subscribe()
 
 
