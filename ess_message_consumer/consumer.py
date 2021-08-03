@@ -2,6 +2,10 @@ import argparse
 import logging
 import time
 import uuid
+from collections import OrderedDict
+from datetime import datetime
+from functools import wraps
+from threading import Lock, Thread
 from typing import List
 
 from confluent_kafka import Consumer
@@ -16,6 +20,8 @@ from streaming_data_types import (
     deserialise_wrdn,
     deserialise_x5f2,
 )
+
+from ess_message_consumer.console_output import Console
 
 
 def get_logger(name: str, level: int = logging.DEBUG):
@@ -36,6 +42,16 @@ def validate_broker(url: str):
 
 
 logger = get_logger("file-writer-messages")
+
+
+def run_in_thread(original):
+    @wraps(original)
+    def wrapper(*args, **kwargs):
+        t = Thread(target=original, args=args, kwargs=kwargs, daemon=True)
+        t.start()
+        return t
+
+    return wrapper
 
 
 class EssMessageConsumer:
@@ -59,6 +75,7 @@ class EssMessageConsumer:
             b"ev42": self._on_event_data,
             b"hs00": self._on_histogram_data,
         }
+        self._msg_lock = Lock()
 
     @property
     def consumer(self):
@@ -76,10 +93,13 @@ class EssMessageConsumer:
             if topic not in existing_topics:
                 raise RuntimeError(f"Provided topic {topic} does not exist")
 
+        self._messages = {topic: OrderedDict() for topic in topics}
+        self.console = Console(topics, self._messages)
         self._consumer.subscribe(topics)
-
         self._consume()
+        self._update_console()
 
+    @run_in_thread
     def _consume(self):
         while True:
             time.sleep(1)
@@ -87,40 +107,50 @@ class EssMessageConsumer:
             if msg is None:
                 continue
             if msg.error():
+                print(f"Error: {msg.error()}")
                 logger.error(f"Error: {msg.error()}")
             else:
                 value = msg.value()
+                topic = msg.topic()
                 type = value[4:8]
                 if type in self._message_handler:
-                    self._message_handler[type](value)
+                    self._message_handler[type](topic, value)
                 else:
                     logger.error(
                         f"Unrecognized serialized type {type}: message: {value}"
                     )
 
-    def _on_fw_finished_writing_message(self, message):
-        logger.debug(deserialise_wrdn(message))
+    def _on_fw_finished_writing_message(self, topic, message):
+        self._update_message_table(topic, deserialise_wrdn(message))
 
-    def _on_fw_command_response_message(self, message):
-        logger.debug(deserialise_answ(message))
+    def _on_fw_command_response_message(self, topic, message):
+        self._update_message_table(topic, deserialise_answ(message))
 
-    def _on_status_message(self, message):
-        logger.debug(deserialise_x5f2(message))
+    def _on_status_message(self, topic, message):
+        self._update_message_table(topic, deserialise_x5f2(message))
 
-    def _on_run_start_message(self, message):
-        logger.debug(deserialise_pl72(message))
+    def _on_run_start_message(self, topic, message):
+        self._update_message_table(topic, deserialise_pl72(message))
 
-    def _on_run_stop_message(self, message):
-        logger.debug(deserialise_6s4t(message))
+    def _on_run_stop_message(self, topic, message):
+        self._update_message_table(topic, deserialise_6s4t(message))
 
-    def _on_log_data(self, message):
-        logger.debug(deserialise_f142(message))
+    def _on_log_data(self, topic, message):
+        self._update_message_table(topic, deserialise_f142(message))
 
-    def _on_histogram_data(self, message):
-        logger.debug(deserialise_hs00(message))
+    def _on_histogram_data(self, topic, message):
+        self._update_message_table(topic, deserialise_hs00(message))
 
-    def _on_event_data(self, message):
-        logger.debug(deserialise_ev42(message))
+    def _on_event_data(self, topic, message):
+        self._update_message_table(topic, deserialise_ev42(message))
+
+    def _update_message_table(self, topic, value):
+        with self._msg_lock:
+            key = datetime.now().ctime()
+            self._messages[topic][str(key)] = str(value)
+
+    def _update_console(self):
+        self.console.update_console()
 
 
 def start_consumer():
