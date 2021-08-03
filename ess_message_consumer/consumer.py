@@ -19,15 +19,7 @@ from streaming_data_types import (
 )
 
 from ess_message_consumer.console_output import Console
-from ess_message_consumer.utils import get_logger, run_in_thread
-
-
-def validate_broker(url: str):
-    if ":" not in url:
-        raise RuntimeError(
-            f"Unable to parse URL {url}, should be of form localhost:9092"
-        )
-
+from ess_message_consumer.utils import get_logger, run_in_thread, validate_broker
 
 logger = get_logger("file-writer-messages")
 

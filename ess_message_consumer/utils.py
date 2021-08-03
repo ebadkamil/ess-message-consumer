@@ -25,3 +25,10 @@ def get_logger(name: str, level: int = logging.DEBUG):
     logger.setLevel(level)
 
     return logger
+
+
+def validate_broker(url: str):
+    if ":" not in url:
+        raise RuntimeError(
+            f"Unable to parse URL {url}, should be of form localhost:9092"
+        )
