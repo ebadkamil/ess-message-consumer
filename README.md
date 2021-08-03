@@ -18,9 +18,11 @@ Installing
 
 Create virtual environment with Python 3.6 or later:
 
+    git clone https://github.com/ebadkamil/ess-message-consumer.git
+    cd ess-message-consumer
     python3 -m venev {env_name}
 
-Activate conda environment:
+Activate virtual environment:
 
     source {env_name}/bin/activate
     pip install .
