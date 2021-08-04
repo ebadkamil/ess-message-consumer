@@ -74,7 +74,11 @@ class TopicsTreeRenderer:
             guide_style="bright_blue",
         )
         if self._topics:
-            for topic in self._topics["topics"]:
+            all_topics = []
+            for existing_topics in self._topics.values():
+                all_topics.extend(existing_topics)
+
+            for topic in set(all_topics):
                 icon = "🔐 " if topic.startswith("__") else "📁 "
                 tree.add(Text(icon) + f" {topic}")
 
