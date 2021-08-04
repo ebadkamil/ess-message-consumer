@@ -29,6 +29,7 @@ Activate virtual environment:
 
 Usage:
 
-    start_consumer -b {broker_address} -t {topics_to_consumer}
+    start_consumer -b {broker_address} -t {topics_to_consumer} --rich_console
     broker_address: for eg. "localhost:9092"
     topics_to_consumer: "topic_1, topic_2, ..."
+    rich_console: optional for rich layout console.
