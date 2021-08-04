@@ -2,7 +2,6 @@ import argparse
 import time
 import uuid
 from collections import OrderedDict
-from datetime import datetime
 from threading import Lock
 from typing import List
 
@@ -48,9 +47,9 @@ class EssMessageConsumer:
         }
         self._msg_lock = Lock()
         self._messages = {topic: OrderedDict() for topic in self._topics}
-
+        self._existing_topics = {}
         if rich_console:
-            self._console = RichConsole(topics, self._messages)
+            self._console = RichConsole(topics, self._messages, self._existing_topics)
         else:
             self._console = NormalConsole(topics, self._messages, logger)
 
@@ -68,8 +67,8 @@ class EssMessageConsumer:
             return
         # Remove all the subscribed topics
         self._consumer.unsubscribe()
-
         existing_topics = self._consumer.list_topics().topics
+        self._existing_topics["topics"] = existing_topics
         for topic in self._topics:
             if topic not in existing_topics:
                 raise RuntimeError(f"Provided topic {topic} does not exist")
@@ -123,10 +122,7 @@ class EssMessageConsumer:
         self._update_message_container(topic, deserialise_ev42(message))
 
     def _update_message_container(self, topic, value):
-        with self._msg_lock:
-            key = datetime.now().ctime()
-            self._messages[topic][key] = value
-            # print("Hello ", self._messages)
+        self._messages[topic][time.time()] = value
 
     def _update_console(self):
         self._console.update_console()
