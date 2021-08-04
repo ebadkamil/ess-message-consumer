@@ -28,13 +28,6 @@ class EssMessageConsumer:
         self._topics = topics
         self.log = logger
 
-        conf = {
-            "bootstrap.servers": self._broker,
-            "auto.offset.reset": "latest",
-            "group.id": uuid.uuid4(),
-        }
-        self._consumer = Consumer(conf)
-
         self._message_handler = {
             b"x5f2": self._on_status_message,
             b"answ": self._on_fw_command_response_message,
@@ -46,42 +39,61 @@ class EssMessageConsumer:
             b"hs00": self._on_histogram_data,
         }
         self._msg_lock = Lock()
-        self._messages = {topic: OrderedDict() for topic in self._topics}
+        self._message_buffer = {topic: OrderedDict() for topic in self._topics}
         self._existing_topics = {}
+
+        self._consumers = {}
+        try:
+            for topic in self._topics:
+                conf = {
+                    "bootstrap.servers": self._broker,
+                    "auto.offset.reset": "latest",
+                    "group.id": uuid.uuid4(),
+                }
+                self._consumers[topic] = Consumer(conf)
+        except Exception as error:
+            self.log.error(f"Unable to create consumers: {error}")
+            raise
+
         if rich_console:
-            self._console = RichConsole(topics, self._messages, self._existing_topics)
+            self._console = RichConsole(
+                topics, self._message_buffer, self._existing_topics
+            )
         else:
-            self._console = NormalConsole(topics, self._messages, logger)
+            self._console = NormalConsole(topics, self._message_buffer, logger)
 
     @property
     def console(self):
         return self._console
 
-    @property
-    def consumer(self):
-        return self._consumer
-
     def subscribe(self):
         if not self._topics:
             self.log.error("Empty topic list")
             return
-        # Remove all the subscribed topics
-        self._consumer.unsubscribe()
-        existing_topics = self._consumer.list_topics().topics
-        self._existing_topics["topics"] = existing_topics
-        for topic in self._topics:
-            if topic not in existing_topics:
-                raise RuntimeError(f"Provided topic {topic} does not exist")
 
-        self._consumer.subscribe(self._topics)
-        self._consume()
+        # Remove all the subscribed topics
+        for topic, consumer in self._consumers.items():
+            consumer.unsubscribe()
+            existing_topics = consumer.list_topics().topics
+            self._existing_topics[topic] = list(existing_topics.keys())
+
+            if topic not in existing_topics:
+                self.log.error(
+                    f"Provided topic {topic} does not exist. \n"
+                    f"Available topics are {list(existing_topics.keys())}"
+                )
+                consumer.close()
+                return
+
+            consumer.subscribe([topic])
+            self._consume(topic)
         self._update_console()
 
     @run_in_thread
-    def _consume(self):
+    def _consume(self, topic):
         while True:
             time.sleep(1)
-            msg = self._consumer.poll(1)
+            msg = self._consumers[topic].poll(1)
             if msg is None:
                 continue
             if msg.error():
@@ -122,7 +134,7 @@ class EssMessageConsumer:
         self._update_message_container(topic, deserialise_ev42(message))
 
     def _update_message_container(self, topic, value):
-        self._messages[topic][time.time()] = value
+        self._message_buffer[topic][time.time()] = value
 
     def _update_console(self):
         self._console.update_console()
