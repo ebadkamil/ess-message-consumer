@@ -72,6 +72,8 @@ class TopicsTreeRenderer:
         tree = Tree(
             "Topics",
             guide_style="bright_blue",
+            highlight=True,
+            style="blue",
         )
         if self._existing_topics:
             for topic in set(self._existing_topics):

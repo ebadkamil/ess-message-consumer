@@ -61,6 +61,10 @@ class EssMessageConsumer:
             self._console = NormalConsole(self._message_buffer, logger)
 
     @property
+    def consumers(self):
+        return self._consumers.values()
+
+    @property
     def console(self):
         return self._console
 
@@ -168,8 +172,17 @@ def start_consumer():
 
     logger = get_logger("file-writer-messages", rich_console)
 
-    consumer = EssMessageConsumer(broker, topics, logger, rich_console=rich_console)
-    consumer.subscribe()
+    ess_msg_consumer = EssMessageConsumer(
+        broker, topics, logger, rich_console=rich_console
+    )
+
+    try:
+        ess_msg_consumer.subscribe()
+    except KeyboardInterrupt:
+        logger.info("... Closing consumers")
+    finally:
+        for consumer in ess_msg_consumer.consumers:
+            consumer.close()
 
 
 if __name__ == "__main__":
