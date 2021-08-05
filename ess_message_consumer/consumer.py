@@ -2,7 +2,6 @@ import argparse
 import time
 import uuid
 from collections import OrderedDict
-from threading import Lock
 from typing import List
 
 from confluent_kafka import Consumer
@@ -26,7 +25,7 @@ class EssMessageConsumer:
         validate_broker(broker)
         self._broker = broker
         self._topics = topics
-        self.log = logger
+        self._logger = logger
 
         self._message_handler = {
             b"x5f2": self._on_status_message,
@@ -38,7 +37,6 @@ class EssMessageConsumer:
             b"ev42": self._on_event_data,
             b"hs00": self._on_histogram_data,
         }
-        self._msg_lock = Lock()
         self._message_buffer = {topic: OrderedDict() for topic in self._topics}
         self._existing_topics = {}
 
@@ -52,7 +50,7 @@ class EssMessageConsumer:
                 }
                 self._consumers[topic] = Consumer(conf)
         except Exception as error:
-            self.log.error(f"Unable to create consumers: {error}")
+            self._logger.error(f"Unable to create consumers: {error}")
             raise
 
         if rich_console:
@@ -60,7 +58,7 @@ class EssMessageConsumer:
                 topics, self._message_buffer, self._existing_topics
             )
         else:
-            self._console = NormalConsole(topics, self._message_buffer, logger)
+            self._console = NormalConsole(self._message_buffer, logger)
 
     @property
     def console(self):
@@ -68,17 +66,17 @@ class EssMessageConsumer:
 
     def subscribe(self):
         if not self._topics:
-            self.log.error("Empty topic list")
+            self._logger.error("Empty topic list")
             return
 
-        # Remove all the subscribed topics
         for topic, consumer in self._consumers.items():
+            # Remove all the subscribed topics
             consumer.unsubscribe()
             existing_topics = consumer.list_topics().topics
             self._existing_topics[topic] = list(existing_topics.keys())
 
             if topic not in existing_topics:
-                self.log.error(
+                self._logger.error(
                     f"Provided topic {topic} does not exist. \n"
                     f"Available topics are {list(existing_topics.keys())}"
                 )
@@ -97,7 +95,7 @@ class EssMessageConsumer:
             if msg is None:
                 continue
             if msg.error():
-                self.log.error(f"Error: {msg.error()}")
+                self._logger.error(f"Error: {msg.error()}")
             else:
                 value = msg.value()
                 topic = msg.topic()
@@ -105,35 +103,35 @@ class EssMessageConsumer:
                 if type in self._message_handler:
                     self._message_handler[type](topic, value)
                 else:
-                    self.log.error(
+                    self._logger.error(
                         f"Unrecognized serialized type {type}: message: {value}"
                     )
 
     def _on_fw_finished_writing_message(self, topic, message):
-        self._update_message_container(topic, deserialise_wrdn(message))
+        self._update_message_buffer(topic, deserialise_wrdn(message))
 
     def _on_fw_command_response_message(self, topic, message):
-        self._update_message_container(topic, deserialise_answ(message))
+        self._update_message_buffer(topic, deserialise_answ(message))
 
     def _on_status_message(self, topic, message):
-        self._update_message_container(topic, deserialise_x5f2(message))
+        self._update_message_buffer(topic, deserialise_x5f2(message))
 
     def _on_run_start_message(self, topic, message):
-        self._update_message_container(topic, deserialise_pl72(message))
+        self._update_message_buffer(topic, deserialise_pl72(message))
 
     def _on_run_stop_message(self, topic, message):
-        self._update_message_container(topic, deserialise_6s4t(message))
+        self._update_message_buffer(topic, deserialise_6s4t(message))
 
     def _on_log_data(self, topic, message):
-        self._update_message_container(topic, deserialise_f142(message))
+        self._update_message_buffer(topic, deserialise_f142(message))
 
     def _on_histogram_data(self, topic, message):
-        self._update_message_container(topic, deserialise_hs00(message))
+        self._update_message_buffer(topic, deserialise_hs00(message))
 
     def _on_event_data(self, topic, message):
-        self._update_message_container(topic, deserialise_ev42(message))
+        self._update_message_buffer(topic, deserialise_ev42(message))
 
-    def _update_message_container(self, topic, value):
+    def _update_message_buffer(self, topic, value):
         self._message_buffer[topic][time.time()] = value
 
     def _update_console(self):

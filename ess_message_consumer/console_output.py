@@ -13,36 +13,36 @@ from rich.tree import Tree
 
 
 class TopicConsoleRenderer:
-    def __init__(self, topic, container):
-        self._container = container
+    def __init__(self, topic, message_buffer):
+        self._message_buffer = message_buffer
         self._topic = topic
         self._last_timestamp = None
         self._last_value = None
 
     def __rich__(self) -> Panel:
-        self._table = Table(
+        table = Table(
             expand=True,
             header_style="bold blue",
             border_style="white",
             highlight=True,
             style="white",
         )
-        self._table.add_column("Timestamp", justify="left")
-        self._table.add_column("Message", justify="left")
+        table.add_column("Timestamp", justify="left")
+        table.add_column("Message", justify="left")
 
-        if self._container:
-            items = self._container.popitem(last=False)
+        if self._message_buffer:
+            items = self._message_buffer.popitem(last=False)
             self._last_timestamp, self._last_value = (
                 str(datetime.fromtimestamp(items[0])),
                 str(items[1]),
             )
 
         if self._last_timestamp and self._last_value:
-            self._table.add_row(self._last_timestamp, self._last_value)
+            table.add_row(self._last_timestamp, self._last_value)
 
         return Panel(
             Align.center(
-                RenderGroup(self._table),
+                RenderGroup(table),
                 vertical="middle",
             ),
             box=box.ROUNDED,
@@ -54,14 +54,14 @@ class TopicConsoleRenderer:
 
 class Header:
     def __rich__(self) -> Panel:
-        grid = Table.grid(expand=True)
-        grid.add_column(justify="center", ratio=1)
-        grid.add_column(justify="left")
-        grid.add_row(
+        table = Table.grid(expand=True)
+        table.add_column(justify="center", ratio=1)
+        table.add_column(justify="left")
+        table.add_row(
             "[b]ESS console-message-consumer[/b]",
             datetime.now().ctime().replace(":", "[blink]:[/]"),
         )
-        return Panel(grid, style="white on blue")
+        return Panel(table, style="white on blue")
 
 
 class TopicsTreeRenderer:
@@ -95,13 +95,13 @@ class TopicsTreeRenderer:
 
 
 class RichConsole:
-    def __init__(self, topics, message_container, existing_topics):
+    def __init__(self, topics, message_buffer, existing_topics):
         self._layout = self.make_layout(topics)
         self._layout["header"].update(Header())
         self._layout["topics_tree"].update(TopicsTreeRenderer(existing_topics))
         for topic in topics:
             self._layout[topic].update(
-                TopicConsoleRenderer(topic, message_container[topic])
+                TopicConsoleRenderer(topic, message_buffer[topic])
             )
 
     def update_console(self):
@@ -128,15 +128,14 @@ class RichConsole:
 
 
 class NormalConsole:
-    def __init__(self, topics, message_container, logger):
-        self._message_container = message_container
-        self._log = logger
+    def __init__(self, message_buffer, logger):
+        self._message_buffer = message_buffer
+        self._logger = logger
 
     def update_console(self):
         while True:
-            if self._message_container:
-                for key in self._message_container:
-                    container = self._message_container[key]
-                    if container:
-                        items = container.popitem(last=False)
-                        self._log.error(items[1])
+            if self._message_buffer:
+                for _, buffer in self._message_buffer.items():
+                    if buffer:
+                        items = buffer.popitem(last=False)
+                        self._logger.error(items[1])
