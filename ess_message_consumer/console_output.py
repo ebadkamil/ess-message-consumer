@@ -65,20 +65,16 @@ class Header:
 
 
 class TopicsTreeRenderer:
-    def __init__(self, topics):
-        self._topics = topics
+    def __init__(self, existing_topics):
+        self._existing_topics = existing_topics
 
     def __rich__(self) -> Panel:
         tree = Tree(
-            "",
+            "Topics",
             guide_style="bright_blue",
         )
-        if self._topics:
-            all_topics = []
-            for existing_topics in self._topics.values():
-                all_topics.extend(existing_topics)
-
-            for topic in set(all_topics):
+        if self._existing_topics:
+            for topic in set(self._existing_topics):
                 icon = "🔐 " if topic.startswith("__") else "📁 "
                 tree.add(Text(icon) + f" {topic}")
 

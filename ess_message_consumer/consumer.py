@@ -38,7 +38,7 @@ class EssMessageConsumer:
             b"hs00": self._on_histogram_data,
         }
         self._message_buffer = {topic: OrderedDict() for topic in self._topics}
-        self._existing_topics = {}
+        self._existing_topics = []
 
         self._consumers = {}
         try:
@@ -73,7 +73,7 @@ class EssMessageConsumer:
             # Remove all the subscribed topics
             consumer.unsubscribe()
             existing_topics = consumer.list_topics().topics
-            self._existing_topics[topic] = list(existing_topics.keys())
+            self._existing_topics.extend(list(existing_topics.keys()))
 
             if topic not in existing_topics:
                 self._logger.error(
