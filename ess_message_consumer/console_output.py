@@ -15,7 +15,7 @@ from rich.tree import Tree
 
 
 class MessagePanel:
-    def __init__(self, topic: str, message_buffer: OrderedDict[float, str]):
+    def __init__(self, topic: str, message_buffer: "OrderedDict[float, str]"):
         self._message_buffer = message_buffer
         self._topic = topic
         self._last_timestamp: Optional[str] = None
