@@ -2,9 +2,11 @@ import argparse
 import time
 import uuid
 from collections import OrderedDict
-from typing import List
+from getpass import getuser
+from logging import Logger
+from typing import Dict, List
 
-from confluent_kafka import Consumer
+from confluent_kafka import Consumer  # type: ignore
 from streaming_data_types import (
     deserialise_6s4t,
     deserialise_answ,
@@ -21,7 +23,9 @@ from ess_message_consumer.utils import get_logger, run_in_thread, validate_broke
 
 
 class EssMessageConsumer:
-    def __init__(self, broker: str, topics: List[str], logger, rich_console=False):
+    def __init__(
+        self, broker: str, topics: List[str], logger: Logger, rich_console: bool = False
+    ):
         validate_broker(broker)
         self._broker = broker
         self._topics = topics
@@ -37,8 +41,10 @@ class EssMessageConsumer:
             b"ev42": self._on_event_data,
             b"hs00": self._on_histogram_data,
         }
-        self._message_buffer = {topic: OrderedDict() for topic in self._topics}
-        self._existing_topics = []
+        self._message_buffer: Dict[str, OrderedDict] = {
+            topic: OrderedDict() for topic in self._topics
+        }
+        self._existing_topics: List[str] = []
 
         self._consumers = {}
         try:
@@ -56,9 +62,9 @@ class EssMessageConsumer:
         if rich_console:
             self._console = RichConsole(
                 topics, self._message_buffer, self._existing_topics
-            )
+            )  # type: ignore
         else:
-            self._console = NormalConsole(self._message_buffer, logger)
+            self._console = NormalConsole(self._message_buffer, logger)  # type: ignore
 
     @property
     def consumers(self):
@@ -92,7 +98,7 @@ class EssMessageConsumer:
         self._update_console()
 
     @run_in_thread
-    def _consume(self, topic):
+    def _consume(self, topic: str):
         while True:
             time.sleep(1)
             msg = self._consumers[topic].poll(1)
@@ -136,7 +142,7 @@ class EssMessageConsumer:
         self._update_message_buffer(topic, deserialise_ev42(message))
 
     def _update_message_buffer(self, topic, value):
-        self._message_buffer[topic][time.time()] = value
+        self._message_buffer[topic][time.time()] = str(value)
 
     def _update_console(self):
         self._console.update_console()
@@ -170,7 +176,7 @@ def start_consumer():
     broker = args.broker
     rich_console = args.rich_console
 
-    logger = get_logger("file-writer-messages", rich_console)
+    logger = get_logger("ess-message-consumer", rich_console)
 
     ess_msg_consumer = EssMessageConsumer(
         broker, topics, logger, rich_console=rich_console
@@ -179,7 +185,7 @@ def start_consumer():
     try:
         ess_msg_consumer.subscribe()
     except KeyboardInterrupt:
-        logger.info("... Closing consumers")
+        logger.info(f"Interrupted by user: {getuser()}. Closing consumers ...")
     finally:
         for consumer in ess_msg_consumer.consumers:
             consumer.close()

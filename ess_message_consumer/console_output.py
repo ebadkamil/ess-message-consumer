@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from datetime import datetime
-from typing import List
+from logging import Logger
+from typing import Dict, List, Optional
 
 from rich import box
 from rich.align import Align
@@ -12,12 +14,12 @@ from rich.text import Text
 from rich.tree import Tree
 
 
-class TopicConsoleRenderer:
-    def __init__(self, topic, message_buffer):
+class MessagePanel:
+    def __init__(self, topic: str, message_buffer: OrderedDict[float, str]):
         self._message_buffer = message_buffer
         self._topic = topic
-        self._last_timestamp = None
-        self._last_value = None
+        self._last_timestamp: Optional[str] = None
+        self._last_value: Optional[str] = None
 
     def __rich__(self) -> Panel:
         table = Table(
@@ -34,7 +36,7 @@ class TopicConsoleRenderer:
             items = self._message_buffer.popitem(last=False)
             self._last_timestamp, self._last_value = (
                 str(datetime.fromtimestamp(items[0])),
-                str(items[1]),
+                items[1],
             )
 
         if self._last_timestamp and self._last_value:
@@ -64,8 +66,8 @@ class Header:
         return Panel(table, style="white on blue")
 
 
-class TopicsTreeRenderer:
-    def __init__(self, existing_topics):
+class TopicsTreePanel:
+    def __init__(self, existing_topics: List[str]):
         self._existing_topics = existing_topics
 
     def __rich__(self) -> Panel:
@@ -93,14 +95,17 @@ class TopicsTreeRenderer:
 
 
 class RichConsole:
-    def __init__(self, topics, message_buffer, existing_topics):
+    def __init__(
+        self,
+        topics: List[str],
+        message_buffer: Dict[str, OrderedDict],
+        existing_topics: List[str],
+    ):
         self._layout = self.make_layout(topics)
         self._layout["header"].update(Header())
-        self._layout["topics_tree"].update(TopicsTreeRenderer(existing_topics))
+        self._layout["topics_tree"].update(TopicsTreePanel(existing_topics))
         for topic in topics:
-            self._layout[topic].update(
-                TopicConsoleRenderer(topic, message_buffer[topic])
-            )
+            self._layout[topic].update(MessagePanel(topic, message_buffer[topic]))
 
     def update_console(self):
         with Live(self._layout, screen=True, refresh_per_second=1):
@@ -126,7 +131,7 @@ class RichConsole:
 
 
 class NormalConsole:
-    def __init__(self, message_buffer, logger):
+    def __init__(self, message_buffer: Dict[str, OrderedDict], logger: Logger):
         self._message_buffer = message_buffer
         self._logger = logger
 

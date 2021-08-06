@@ -15,7 +15,9 @@ def run_in_thread(original):
     return wrapper
 
 
-def get_logger(name: str, level: int = logging.DEBUG, rich_console: bool = False):
+def get_logger(
+    name: str, level: int = logging.DEBUG, rich_console: bool = False
+) -> logging.Logger:
     logger = logging.getLogger(name)
     if rich_console:
         console_handler = logging.StreamHandler()
