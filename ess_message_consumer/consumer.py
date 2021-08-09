@@ -7,18 +7,9 @@ from logging import Logger
 from typing import Dict, List
 
 from confluent_kafka import Consumer  # type: ignore
-from streaming_data_types import (
-    deserialise_6s4t,
-    deserialise_answ,
-    deserialise_ev42,
-    deserialise_f142,
-    deserialise_hs00,
-    deserialise_pl72,
-    deserialise_wrdn,
-    deserialise_x5f2,
-)
 
 from ess_message_consumer.console_output import NormalConsole, RichConsole
+from ess_message_consumer.deserializer import DeserializerFactory
 from ess_message_consumer.utils import get_logger, run_in_thread, validate_broker
 
 
@@ -31,16 +22,6 @@ class EssMessageConsumer:
         self._topics = topics
         self._logger = logger
 
-        self._message_handler = {
-            b"x5f2": self._on_status_message,
-            b"answ": self._on_fw_command_response_message,
-            b"wrdn": self._on_fw_finished_writing_message,
-            b"6s4t": self._on_run_stop_message,
-            b"pl72": self._on_run_start_message,
-            b"f142": self._on_log_data,
-            b"ev42": self._on_event_data,
-            b"hs00": self._on_histogram_data,
-        }
         self._message_buffer: Dict[str, OrderedDict] = {
             topic: OrderedDict() for topic in self._topics
         }
@@ -110,36 +91,15 @@ class EssMessageConsumer:
                 value = msg.value()
                 topic = msg.topic()
                 type = value[4:8]
-                if type in self._message_handler:
-                    self._message_handler[type](topic, value)
-                else:
+                try:
+                    deserialized_message = DeserializerFactory.from_serialized_type(
+                        type
+                    ).deserialize(value)
+                    self._update_message_buffer(topic, deserialized_message)
+                except NotImplementedError:
                     self._logger.error(
                         f"Unrecognized serialized type {type}: message: {value}"
                     )
-
-    def _on_fw_finished_writing_message(self, topic, message):
-        self._update_message_buffer(topic, deserialise_wrdn(message))
-
-    def _on_fw_command_response_message(self, topic, message):
-        self._update_message_buffer(topic, deserialise_answ(message))
-
-    def _on_status_message(self, topic, message):
-        self._update_message_buffer(topic, deserialise_x5f2(message))
-
-    def _on_run_start_message(self, topic, message):
-        self._update_message_buffer(topic, deserialise_pl72(message))
-
-    def _on_run_stop_message(self, topic, message):
-        self._update_message_buffer(topic, deserialise_6s4t(message))
-
-    def _on_log_data(self, topic, message):
-        self._update_message_buffer(topic, deserialise_f142(message))
-
-    def _on_histogram_data(self, topic, message):
-        self._update_message_buffer(topic, deserialise_hs00(message))
-
-    def _on_event_data(self, topic, message):
-        self._update_message_buffer(topic, deserialise_ev42(message))
 
     def _update_message_buffer(self, topic, value):
         self._message_buffer[topic][time.time()] = str(value)
