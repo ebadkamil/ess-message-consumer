@@ -2,6 +2,7 @@ import logging
 from functools import wraps
 from threading import Thread
 
+from confluent_kafka import Producer  # type: ignore
 from rich.logging import RichHandler
 
 
@@ -34,8 +35,35 @@ def get_logger(
     return logger
 
 
-def validate_broker(url: str):
-    if ":" not in url:
-        raise RuntimeError(
-            f"Unable to parse URL {url}, should be of form localhost:9092"
+def check_kafka_connection(broker_url: str):
+    kafka_ready = False
+    msg = None
+    if ":" not in broker_url:
+        msg = f"Unable to parse URL {broker_url}, should be of form localhost:9092"
+        return kafka_ready, msg
+
+    try:
+        producer = Producer({"bootstrap.servers": broker_url})
+    except Exception as error:
+        msg = error
+        return kafka_ready, msg
+
+    def delivery_callback(err, msg):
+        nonlocal kafka_ready
+        if not err:
+            kafka_ready = True
+
+    n_polls = 0
+    while n_polls < 5 and not kafka_ready:
+        producer.produce(
+            "__waitUntilUp", value="Check if up", on_delivery=delivery_callback
         )
+        producer.poll(6)
+        n_polls += 1
+
+    msg = (
+        "Kafka up .."
+        if kafka_ready
+        else f"Cannot connect to broker {broker_url} in 30 secs."
+    )
+    return kafka_ready, msg
