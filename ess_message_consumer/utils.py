@@ -1,8 +1,10 @@
+import argparse
 import logging
 from functools import wraps
 from threading import Thread
 
 from confluent_kafka import Producer  # type: ignore
+from confluent_kafka.admin import AdminClient  # type: ignore
 from rich.logging import RichHandler
 
 
@@ -67,3 +69,24 @@ def check_kafka_connection(broker_url: str):
         else f"Cannot connect to broker {broker_url} in 30 secs."
     )
     return kafka_ready, msg
+
+
+def list_topics():
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
+    parser.add_argument(
+        "-b",
+        "--broker",
+        type=str,
+        default="localhost:9092",
+        help="Kafka broker address",
+    )
+    args = parser.parse_args()
+    broker = args.broker
+
+    conf = {"bootstrap.servers": f"{broker}"}
+    admin = AdminClient(conf)
+    topics = admin.list_topics().topics.keys()
+    to_print = ""
+    for index, value in enumerate(topics):
+        to_print += f"  {index} : {value}\n"
+    print(to_print)
