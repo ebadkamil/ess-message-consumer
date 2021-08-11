@@ -44,8 +44,9 @@ def check_kafka_connection(broker_url: str):
         msg = f"Unable to parse URL {broker_url}, should be of form localhost:9092"
         return kafka_ready, msg
 
+    conf = {"bootstrap.servers": broker_url}
     try:
-        producer = Producer({"bootstrap.servers": broker_url})
+        producer = Producer(conf)
     except Exception as error:
         msg = error
         return kafka_ready, msg
@@ -68,6 +69,16 @@ def check_kafka_connection(broker_url: str):
         if kafka_ready
         else f"Cannot connect to broker {broker_url} in 30 secs."
     )
+
+    if kafka_ready:
+        admin = AdminClient(conf)
+        futures = admin.delete_topics(["__waitUntilUp"])
+        for topic, future in futures.items():
+            try:
+                future.result()
+            except Exception as error:
+                msg = f"failed to delete topic {topic}: {error}"
+
     return kafka_ready, msg
 
 
