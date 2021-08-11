@@ -1,5 +1,4 @@
 import argparse
-import sys
 import time
 import uuid
 from collections import OrderedDict
@@ -11,7 +10,7 @@ from confluent_kafka import Consumer  # type: ignore
 
 from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.deserializer import DeserializerFactory
-from ess_message_consumer.utils import check_kafka_connection, get_logger, run_in_thread
+from ess_message_consumer.utils import get_logger, run_in_thread
 
 
 class EssMessageConsumer:
@@ -109,7 +108,7 @@ class EssMessageConsumer:
 
 
 def start_consumer():
-    parser = argparse.ArgumentParser(prog="FileWriter Message consumer")
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
     parser.add_argument(
         "-t",
         "--topics",
@@ -136,14 +135,6 @@ def start_consumer():
     rich_console = args.rich_console
 
     logger = get_logger("ess-message-consumer", rich_console)
-
-    # check if connection can be made to provided broker address.
-    # This is important since if incorrect broker is provided then consumers hang
-    # and application has to be killed manually.
-    ready, msg = check_kafka_connection(broker)
-    logger.info(msg)
-    if not ready:
-        sys.exit(1)
 
     ess_msg_consumer = EssMessageConsumer(
         broker, topics, logger, rich_console=rich_console
