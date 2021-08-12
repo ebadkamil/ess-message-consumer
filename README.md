@@ -22,14 +22,20 @@ Create virtual environment with Python 3.6 or later:
     cd ess-message-consumer
     python3 -m venev {env_name}
 
-Activate virtual environment:
+Activate virtual environment and install `ess-message-consumer`:
 
     source {env_name}/bin/activate
     pip install .
 
 Usage:
 
-    start_consumer -b {broker_address} -t {topics_to_consumer} --rich_console
-    broker_address: for eg. "localhost:9092"
-    topics_to_consumer: "topic_1, topic_2, ..."
-    rich_console: optional for rich layout console.
+- Start consuming ESS flatbuffer messages from given topics
+
+        start_consumer -b {broker_address} -t {topics_to_consume_msg_from} --rich_console
+        broker_address: for eg. "localhost:9092"
+        topics_to_consume_msg_from: "topic_1, topic_2, ..."
+        rich_console: optional for rich layout console.
+
+- List all available topics on a broker
+
+        list_topics -b {broker_address}
