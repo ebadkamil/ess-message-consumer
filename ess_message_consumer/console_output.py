@@ -36,7 +36,7 @@ class MessagePanel:
             items = self._message_buffer.popitem(last=False)
             self._last_timestamp, self._last_value = (
                 str(datetime.fromtimestamp(items[0])),
-                items[1],
+                str(items[1]),
             )
 
         if self._last_timestamp and self._last_value:

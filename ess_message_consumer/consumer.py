@@ -1,4 +1,3 @@
-import argparse
 import time
 import uuid
 from collections import OrderedDict
@@ -10,7 +9,7 @@ from confluent_kafka import Consumer  # type: ignore
 
 from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.deserializer import DeserializerFactory
-from ess_message_consumer.utils import get_logger, run_in_thread
+from ess_message_consumer.utils import cli_parser, get_logger, run_in_thread
 
 
 class EssMessageConsumer:
@@ -53,6 +52,10 @@ class EssMessageConsumer:
     @property
     def console(self):
         return self._console
+
+    @property
+    def message_buffer(self):
+        return self._message_buffer
 
     def subscribe(self):
         if not self._topics:
@@ -101,34 +104,14 @@ class EssMessageConsumer:
                     )
 
     def _update_message_buffer(self, topic, value):
-        self._message_buffer[topic][time.time()] = str(value)
+        self._message_buffer[topic][time.time()] = value
 
     def _update_console(self):
         self._console.update_console()
 
 
 def start_consumer():
-    parser = argparse.ArgumentParser(prog="ESS Message consumer")
-    parser.add_argument(
-        "-t",
-        "--topics",
-        required=True,
-        type=str,
-        help="List of topics to consume messages from",
-    )
-
-    parser.add_argument(
-        "-b",
-        "--broker",
-        type=str,
-        default="localhost:9092",
-        help="Kafka broker address",
-    )
-    parser.add_argument(
-        "--rich_console", action="store_true", help="To get rich layout"
-    )
-
-    args = parser.parse_args()
+    args = cli_parser()
 
     topics = [x.strip() for x in args.topics.split(",") if x.strip()]
     broker = args.broker
