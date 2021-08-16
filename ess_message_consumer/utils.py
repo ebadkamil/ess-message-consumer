@@ -82,6 +82,30 @@ def check_kafka_connection(broker_url: str):
     return kafka_ready, msg
 
 
+def cli_parser() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
+    parser.add_argument(
+        "-t",
+        "--topics",
+        required=True,
+        type=str,
+        help="List of topics to consume messages from",
+    )
+
+    parser.add_argument(
+        "-b",
+        "--broker",
+        type=str,
+        default="localhost:9092",
+        help="Kafka broker address",
+    )
+    parser.add_argument(
+        "--rich_console", action="store_true", help="To get rich layout"
+    )
+
+    return parser.parse_args()
+
+
 def list_topics():
     parser = argparse.ArgumentParser(prog="ESS Message consumer")
     parser.add_argument(
