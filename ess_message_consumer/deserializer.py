@@ -1,3 +1,5 @@
+import json
+
 from streaming_data_types import (
     deserialise_6s4t,
     deserialise_answ,
@@ -50,6 +52,11 @@ class HistogramMessage:
         return deserialise_hs00(message)
 
 
+class JsonMessage:
+    def deserialize(self, message):
+        return json.loads(message)
+
+
 class DeserializerFactory:
     _message_handler = {
         b"x5f2": StatusMessage,
@@ -60,6 +67,7 @@ class DeserializerFactory:
         b"f142": LogMessage,
         b"ev42": EventMessage,
         b"hs00": HistogramMessage,
+        b"json": JsonMessage,
     }
 
     @classmethod
@@ -67,4 +75,4 @@ class DeserializerFactory:
         if type in cls._message_handler:
             return cls._message_handler[type]()
 
-        raise NotImplementedError(f"Unspecified serialization of type: {type}")
+        return cls._message_handler[b"json"]()

@@ -98,9 +98,10 @@ class EssMessageConsumer:
                         type
                     ).deserialize(value)
                     self._update_message_buffer(topic, deserialized_message)
-                except NotImplementedError:
+                except Exception as error:
                     self._logger.error(
                         f"Unrecognized serialized type {type}: message: {value}"
+                        f"\nError:{error}"
                     )
 
     def _update_message_buffer(self, topic, value):
