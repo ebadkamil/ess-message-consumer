@@ -1,21 +1,17 @@
 import time
 import uuid
 from collections import OrderedDict
-from getpass import getuser
 from logging import Logger
 from typing import Dict, List
 
 from confluent_kafka import Consumer  # type: ignore
 
-from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.deserializer import DeserializerFactory
-from ess_message_consumer.utils import cli_parser, get_logger, run_in_thread
+from ess_message_consumer.utils import run_in_thread
 
 
 class EssMessageConsumer:
-    def __init__(
-        self, broker: str, topics: List[str], logger: Logger, rich_console: bool = False
-    ):
+    def __init__(self, broker: str, topics: List[str], logger: Logger):
         self._broker = broker
         self._topics = topics
         self._logger = logger
@@ -38,24 +34,17 @@ class EssMessageConsumer:
             self._logger.error(f"Unable to create consumers: {error}")
             raise
 
-        if rich_console:
-            self._console = RichConsole(
-                topics, self._message_buffer, self._existing_topics
-            )  # type: ignore
-        else:
-            self._console = NormalConsole(self._message_buffer, logger)  # type: ignore
-
     @property
     def consumers(self):
         return self._consumers.values()
 
     @property
-    def console(self):
-        return self._console
-
-    @property
     def message_buffer(self):
         return self._message_buffer
+
+    @property
+    def existing_topics(self):
+        return self._existing_topics
 
     def subscribe(self):
         if not self._topics:
@@ -78,7 +67,6 @@ class EssMessageConsumer:
 
             consumer.subscribe([topic])
             self._consume(topic)
-        self._update_console()
 
     @run_in_thread
     def _consume(self, topic: str):
@@ -106,32 +94,3 @@ class EssMessageConsumer:
 
     def _update_message_buffer(self, topic, value):
         self._message_buffer[topic][time.time()] = value
-
-    def _update_console(self):
-        self._console.update_console()
-
-
-def start_consumer():
-    args = cli_parser()
-
-    topics = [x.strip() for x in args.topics.split(",") if x.strip()]
-    broker = args.broker
-    rich_console = args.rich_console
-
-    logger = get_logger("ess-message-consumer", rich_console)
-
-    ess_msg_consumer = EssMessageConsumer(
-        broker, topics, logger, rich_console=rich_console
-    )
-
-    try:
-        ess_msg_consumer.subscribe()
-    except KeyboardInterrupt:
-        logger.info(f"Interrupted by user: {getuser()}. Closing consumers ...")
-    finally:
-        for consumer in ess_msg_consumer.consumers:
-            consumer.close()
-
-
-if __name__ == "__main__":
-    start_consumer()

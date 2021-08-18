@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [
-            "start_consumer = ess_message_consumer.consumer:start_consumer",
+            "start_consumer = ess_message_consumer.application:start_application",
             "list_topics = ess_message_consumer.utils:list_topics",
         ],
     },
