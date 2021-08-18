@@ -22,7 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "start_consumer = ess_message_consumer.application:start_application",
-            "list_topics = ess_message_consumer.utils:list_topics",
+            "list_available_topics = ess_message_consumer.application:list_available_topics",
         ],
     },
     install_requires=[

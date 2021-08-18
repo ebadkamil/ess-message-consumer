@@ -19,7 +19,6 @@ class EssMessageConsumer:
         self._message_buffer: Dict[str, OrderedDict] = {
             topic: OrderedDict() for topic in self._topics
         }
-        self._existing_topics: List[str] = []
 
         self._consumers = {}
         try:
@@ -42,10 +41,6 @@ class EssMessageConsumer:
     def message_buffer(self):
         return self._message_buffer
 
-    @property
-    def existing_topics(self):
-        return self._existing_topics
-
     def subscribe(self):
         if not self._topics:
             self._logger.error("Empty topic list")
@@ -55,7 +50,6 @@ class EssMessageConsumer:
             # Remove all the subscribed topics
             consumer.unsubscribe()
             existing_topics = consumer.list_topics().topics
-            self._existing_topics.extend(list(existing_topics.keys()))
 
             if topic not in existing_topics:
                 self._logger.error(

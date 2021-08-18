@@ -1,9 +1,11 @@
+import argparse
 from getpass import getuser
 from logging import Logger
 from typing import List
 
 from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.consumer import EssMessageConsumer
+from ess_message_consumer.topic_watchdog import TopicWatchDog
 from ess_message_consumer.utils import cli_parser, get_logger
 
 
@@ -14,7 +16,9 @@ class Application:
 
         self._ess_message_consumer = EssMessageConsumer(broker, topics, logger)
         message_buffer = self._ess_message_consumer.message_buffer
-        existing_topics = self._ess_message_consumer.existing_topics
+
+        self._topic_watchdog = TopicWatchDog(broker, logger)
+        existing_topics = self._topic_watchdog.existing_topics
 
         if rich_console:
             self._console = RichConsole(
@@ -24,6 +28,7 @@ class Application:
             self._console = NormalConsole(message_buffer, logger)  # type: ignore
 
     def start(self):
+        self._topic_watchdog.track_topics()
         self._ess_message_consumer.subscribe()
         self._console.update_console()
 
@@ -49,6 +54,26 @@ def start_application():
         logger.info(f"Interrupted by user: {getuser()}. Closing consumers ...")
     finally:
         app.stop()
+
+
+def list_available_topics():
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
+    parser.add_argument(
+        "-b",
+        "--broker",
+        type=str,
+        default="localhost:9092",
+        help="Kafka broker address",
+    )
+    args = parser.parse_args()
+    broker = args.broker
+
+    topic_watchdog = TopicWatchDog(broker)
+    topics = topic_watchdog.get_available_topics()
+    to_print = ""
+    for index, value in enumerate(topics):
+        to_print += f"  {index} : {value}\n"
+    print(to_print)
 
 
 if __name__ == "__main__":

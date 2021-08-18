@@ -78,7 +78,7 @@ class TopicsTreePanel:
             style="blue",
         )
         if self._existing_topics:
-            for topic in set(self._existing_topics):
+            for topic in self._existing_topics:
                 icon = "🔐 " if topic.startswith("__") else "📁 "
                 tree.add(Text(icon) + f" {topic}")
 
