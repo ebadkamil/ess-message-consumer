@@ -1,3 +1,4 @@
+import argparse
 from getpass import getuser
 from logging import Logger
 from typing import List
@@ -53,6 +54,26 @@ def start_application():
         logger.info(f"Interrupted by user: {getuser()}. Closing consumers ...")
     finally:
         app.stop()
+
+
+def list_available_topics():
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
+    parser.add_argument(
+        "-b",
+        "--broker",
+        type=str,
+        default="localhost:9092",
+        help="Kafka broker address",
+    )
+    args = parser.parse_args()
+    broker = args.broker
+
+    topic_watchdog = TopicWatchDog(broker)
+    topics = topic_watchdog.get_available_topics()
+    to_print = ""
+    for index, value in enumerate(topics):
+        to_print += f"  {index} : {value}\n"
+    print(to_print)
 
 
 if __name__ == "__main__":

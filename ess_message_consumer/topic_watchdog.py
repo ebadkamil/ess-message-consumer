@@ -8,7 +8,7 @@ from ess_message_consumer.utils import run_in_thread
 
 
 class TopicWatchDog:
-    def __init__(self, broker: str, logger: Logger):
+    def __init__(self, broker: str, logger: Logger = None):
         self._broker = broker
         self._logger = logger
         self._existing_topics = set()
@@ -21,16 +21,22 @@ class TopicWatchDog:
             }
             self._consumer = Consumer(conf)
         except Exception as error:
-            self._logger.error(f"Unable to create consumers: {error}")
+            msg = f"Unable to create consumers: {error}"
+            if self._logger:
+                self._logger.error(msg)
+            else:
+                print(msg)
             raise
 
     @run_in_thread
     def track_topics(self):
         while True:
-            self._existing_topics.update(
-                list(self._consumer.list_topics().topics.keys())
-            )
-            time.sleep(2)
+            existing_topics = self.get_available_topics()
+            self._existing_topics.update(existing_topics)
+            time.sleep(5)
+
+    def get_available_topics(self):
+        return list(self._consumer.list_topics().topics.keys())
 
     @property
     def existing_topics(self):

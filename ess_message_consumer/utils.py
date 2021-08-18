@@ -104,24 +104,3 @@ def cli_parser() -> argparse.Namespace:
     )
 
     return parser.parse_args()
-
-
-def list_topics():
-    parser = argparse.ArgumentParser(prog="ESS Message consumer")
-    parser.add_argument(
-        "-b",
-        "--broker",
-        type=str,
-        default="localhost:9092",
-        help="Kafka broker address",
-    )
-    args = parser.parse_args()
-    broker = args.broker
-
-    conf = {"bootstrap.servers": f"{broker}"}
-    admin = AdminClient(conf)
-    topics = admin.list_topics().topics.keys()
-    to_print = ""
-    for index, value in enumerate(topics):
-        to_print += f"  {index} : {value}\n"
-    print(to_print)
