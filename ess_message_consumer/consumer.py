@@ -39,10 +39,6 @@ class EssMessageConsumer:
         return self._consumers.values()
 
     @property
-    def console(self):
-        return self._console
-
-    @property
     def message_buffer(self):
         return self._message_buffer
 
