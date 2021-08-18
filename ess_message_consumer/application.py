@@ -32,7 +32,7 @@ class Application:
             consumer.close()
 
 
-def start_consumer():
+def start_application():
     args = cli_parser()
 
     topics = [x.strip() for x in args.topics.split(",") if x.strip()]
@@ -52,4 +52,4 @@ def start_consumer():
 
 
 if __name__ == "__main__":
-    start_consumer()
+    start_application()
