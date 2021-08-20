@@ -22,6 +22,7 @@ setup(
     entry_points={
         "console_scripts": [
             "start_consumer = ess_message_consumer.application:start_application",
+            "start_producer = ess_message_consumer.producer:start_producer",
             "list_available_topics = ess_message_consumer.application:list_available_topics",
         ],
     },
