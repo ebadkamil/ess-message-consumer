@@ -38,4 +38,12 @@ Usage:
 
 - List all available topics on a broker
 
-        list_topics -b {broker_address}
+        list_available_topics -b {broker_address}
+
+- Produce messages on a kafka-topic for debugging purposes:
+
+        start_producer -b {broker_address}
+        # This will prompt you to input following information in order:
+            # 1. Topic Name: {topic_name_to_publish_data_to}
+            # 2. Message to send: {put your message here}
+            # 3. Exit ? (y/n)
