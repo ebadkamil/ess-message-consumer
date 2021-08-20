@@ -57,7 +57,7 @@ class EssMessageConsumer:
                     f"Available topics are {list(existing_topics.keys())}"
                 )
                 consumer.close()
-                return
+                continue
 
             consumer.subscribe([topic])
             self._consume(topic)
