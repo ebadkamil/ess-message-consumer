@@ -1,13 +1,12 @@
 import time
 import uuid
-from collections import OrderedDict
 from logging import Logger
 from typing import Dict, List
 
 from confluent_kafka import Consumer  # type: ignore
 
 from ess_message_consumer.deserializer import DeserializerFactory
-from ess_message_consumer.utils import run_in_thread
+from ess_message_consumer.utils import BoundOrderedDict, run_in_thread
 
 
 class EssMessageConsumer:
@@ -16,8 +15,8 @@ class EssMessageConsumer:
         self._topics = topics
         self._logger = logger
 
-        self._message_buffer: Dict[str, OrderedDict] = {
-            topic: OrderedDict() for topic in self._topics
+        self._message_buffer: Dict[str, BoundOrderedDict] = {
+            topic: BoundOrderedDict(maxlen=50) for topic in self._topics
         }
 
         self._consumers = {}

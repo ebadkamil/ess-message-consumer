@@ -1,11 +1,28 @@
 import argparse
 import logging
+from collections import OrderedDict
 from functools import wraps
 from threading import Thread
 
 from confluent_kafka import Producer  # type: ignore
 from confluent_kafka.admin import AdminClient  # type: ignore
 from rich.logging import RichHandler
+
+
+class BoundOrderedDict(OrderedDict):
+    def __init__(self, *args, **kwargs):
+        self.maxlen = kwargs.pop("maxlen", None)
+        super().__init__(*args, **kwargs)
+        self._maintain_length()
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._maintain_length()
+
+    def _maintain_length(self):
+        if self.maxlen is not None:
+            while len(self) > self.maxlen:
+                self.popitem(last=False)
 
 
 def run_in_thread(original):
