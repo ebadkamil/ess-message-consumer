@@ -10,7 +10,7 @@ from ess_message_consumer.utils import run_in_thread
 class TopicWatchDog:
     def __init__(self, broker: str, logger: Logger = None):
         self._broker = broker
-        self._logger = logger
+        self._logger = logger.error if logger else print
         self._existing_topics = set()
 
         try:
@@ -22,10 +22,7 @@ class TopicWatchDog:
             self._consumer = Consumer(conf)
         except Exception as error:
             msg = f"Unable to create consumers: {error}"
-            if self._logger:
-                self._logger.error(msg)
-            else:
-                print(msg)
+            self._logger(msg)
             raise
 
     @run_in_thread
