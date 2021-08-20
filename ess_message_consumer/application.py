@@ -1,4 +1,3 @@
-import argparse
 from getpass import getuser
 from logging import Logger
 from typing import List
@@ -6,7 +5,7 @@ from typing import List
 from ess_message_consumer.console_output import NormalConsole, RichConsole
 from ess_message_consumer.consumer import EssMessageConsumer
 from ess_message_consumer.topic_watchdog import TopicWatchDog
-from ess_message_consumer.utils import cli_parser, get_logger
+from ess_message_consumer.utils import broker_cli, cli_parser, get_logger
 
 
 class Application:
@@ -57,15 +56,7 @@ def start_application():
 
 
 def list_available_topics():
-    parser = argparse.ArgumentParser(prog="ESS Message consumer")
-    parser.add_argument(
-        "-b",
-        "--broker",
-        type=str,
-        default="localhost:9092",
-        help="Kafka broker address",
-    )
-    args = parser.parse_args()
+    args = broker_cli()
     broker = args.broker
 
     topic_watchdog = TopicWatchDog(broker)
