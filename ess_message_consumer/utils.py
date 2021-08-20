@@ -104,3 +104,15 @@ def cli_parser() -> argparse.Namespace:
     )
 
     return parser.parse_args()
+
+
+def broker_cli() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="ESS Message consumer")
+    parser.add_argument(
+        "-b",
+        "--broker",
+        type=str,
+        default="localhost:9092",
+        help="Kafka broker address",
+    )
+    return parser.parse_args()
