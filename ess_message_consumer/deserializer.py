@@ -2,6 +2,7 @@ import json
 
 from streaming_data_types import (
     deserialise_6s4t,
+    deserialise_ADAr,
     deserialise_answ,
     deserialise_ev42,
     deserialise_f142,
@@ -57,6 +58,11 @@ class JsonMessage:
         return json.loads(message)
 
 
+class AreaDetectorMessage:
+    def deserialize(self, message):
+        return deserialise_ADAr(message)
+
+
 class DeserializerFactory:
     _message_handler = {
         b"x5f2": StatusMessage,
@@ -67,6 +73,7 @@ class DeserializerFactory:
         b"f142": LogMessage,
         b"ev42": EventMessage,
         b"hs00": HistogramMessage,
+        b"ADAr": AreaDetectorMessage,
         b"json": JsonMessage,
     }
 
