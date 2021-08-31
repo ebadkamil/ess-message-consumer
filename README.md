@@ -11,6 +11,7 @@
     |x5f2|Status messages|
     |answ|File-writer command response|
     |wrdn|File-writer finished writing|
+    |ADAr|EPICS area detector data|
 Installing
 ==========
 
