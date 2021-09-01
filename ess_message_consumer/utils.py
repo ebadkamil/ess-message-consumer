@@ -1,5 +1,6 @@
 import argparse
 import logging
+import time
 from collections import OrderedDict
 from functools import wraps
 from threading import Thread
@@ -23,6 +24,28 @@ class BoundOrderedDict(OrderedDict):
         if self.maxlen is not None:
             while len(self) > self.maxlen:
                 self.popitem(last=False)
+
+
+class Profiler:
+    """Profiler class
+    Usage:
+        with Profiler(label="some name"):
+            do_something()
+    """
+
+    def __init__(self, label="", enabled=True):
+        self._label = label
+        self._enabled = enabled
+        self._start = None
+
+    def __enter__(self):
+        self._start = time.perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self._enabled:
+            duration = time.perf_counter() - self._start
+            print(f"Time for Execution of {self._label}: {duration * 1000:.4f} ms.")
 
 
 def run_in_thread(original):
