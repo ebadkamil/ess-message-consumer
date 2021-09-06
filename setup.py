@@ -1,5 +1,6 @@
 import os.path as osp
 import re
+import sys
 
 from setuptools import find_packages, setup
 
@@ -12,12 +13,22 @@ def find_version():
         raise RuntimeError("Unable to find version string.")
 
 
+def get_readme_content():
+    basedir = osp.dirname(osp.realpath(sys.argv[0]))
+    with open(osp.join(basedir, "README.md"), "r") as f:
+        content = f.read()
+    return content
+
+
 setup(
     name="ess-message-consumer",
     version=find_version(),
     author="Ebad Kamil",
     author_email="ebad.kamil@ess.eu",
     maintainer="Ebad Kamil",
+    description="Kafka consumer to handle ESS flatbuffer messages and provide a rich display on console.",
+    long_description=get_readme_content(),
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     entry_points={
         "console_scripts": [
