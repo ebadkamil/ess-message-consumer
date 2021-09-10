@@ -12,6 +12,8 @@
     |answ|File-writer command response|
     |wrdn|File-writer finished writing|
     |ADAr|EPICS area detector data|
+    |rf5k|Forwarder configuration updates|
+
 Installing
 ==========
 

@@ -8,6 +8,7 @@ from streaming_data_types import (
     deserialise_f142,
     deserialise_hs00,
     deserialise_pl72,
+    deserialise_rf5k,
     deserialise_wrdn,
     deserialise_x5f2,
 )
@@ -63,6 +64,11 @@ class AreaDetectorMessage:
         return deserialise_ADAr(message)
 
 
+class ForwarderConfigurationMessage:
+    def deserialize(self, message):
+        return deserialise_rf5k(message)
+
+
 class DeserializerFactory:
     _message_handler = {
         b"x5f2": StatusMessage,
@@ -74,6 +80,7 @@ class DeserializerFactory:
         b"ev42": EventMessage,
         b"hs00": HistogramMessage,
         b"ADAr": AreaDetectorMessage,
+        b"rf5k": ForwarderConfigurationMessage,
         b"json": JsonMessage,
     }
 
