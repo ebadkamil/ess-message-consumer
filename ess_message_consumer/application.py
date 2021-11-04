@@ -43,7 +43,11 @@ def start_application():
     broker = args.broker
     rich_console = args.rich_console
 
-    logger = get_logger("ess-message-consumer", rich_console)
+    logger = get_logger(
+        "ess-message-consumer",
+        rich_console=rich_console,
+        graylog_logger_address=args.graylog_logger_address,
+    )
 
     app = Application(broker, topics, logger, rich_console=rich_console)
 
