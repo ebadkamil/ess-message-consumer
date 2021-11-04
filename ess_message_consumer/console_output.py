@@ -141,4 +141,4 @@ class NormalConsole:
                 for _, buffer in self._message_buffer.items():
                     if buffer:
                         items = buffer.popitem(last=False)
-                        self._logger.error(items[1])
+                        self._logger.info(items[1])

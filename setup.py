@@ -40,6 +40,7 @@ setup(
     install_requires=[
         "confluent_kafka >= 1.7.0",
         "ess-streaming_data_types>=0.10.0",
+        "graypy",
         "rich>=10.6.0",
         "black==20.8b1",
         "flake8==3.8.4",

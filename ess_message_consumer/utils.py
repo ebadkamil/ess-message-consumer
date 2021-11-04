@@ -4,7 +4,9 @@ import time
 from collections import OrderedDict
 from functools import wraps
 from threading import Thread
+from typing import Optional
 
+import graypy
 from confluent_kafka import Producer  # type: ignore
 from confluent_kafka.admin import AdminClient  # type: ignore
 from rich.logging import RichHandler
@@ -59,7 +61,10 @@ def run_in_thread(original):
 
 
 def get_logger(
-    name: str, level: int = logging.DEBUG, rich_console: bool = False
+    name: str,
+    level: int = logging.DEBUG,
+    rich_console: bool = False,
+    graylog_logger_address: Optional[str] = None,
 ) -> logging.Logger:
     logger = logging.getLogger(name)
     if rich_console:
@@ -72,8 +77,10 @@ def get_logger(
         console_handler = RichHandler(show_level=False, show_path=False)
 
     logger.addHandler(console_handler)
+    if graylog_logger_address:
+        host, port = graylog_logger_address.split(":")
+        logger.addHandler(graypy.GELFTCPHandler(host, int(port)))
     logger.setLevel(level)
-
     return logger
 
 
@@ -131,7 +138,6 @@ def cli_parser() -> argparse.Namespace:
         type=str,
         help="List of topics to consume messages from",
     )
-
     parser.add_argument(
         "-b",
         "--broker",
@@ -141,6 +147,12 @@ def cli_parser() -> argparse.Namespace:
     )
     parser.add_argument(
         "--rich_console", action="store_true", help="To get rich layout"
+    )
+    parser.add_argument(
+        "-g",
+        "--graylog-logger-address",
+        required=False,
+        help="<host[:port]> Address to the Graylog server. For eg. localhost:12201",
     )
 
     return parser.parse_args()
