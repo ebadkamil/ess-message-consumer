@@ -34,10 +34,11 @@ Usage:
 
 - Start consuming ESS flatbuffer messages from given topics
 
-        start_consumer -b {broker_address} -t {topics_to_consume_msg_from} --rich_console
+        start_consumer -b {broker_address} -t {topics_to_consume_msg_from} --rich_console -g {graylog_address}
         broker_address: for eg. "localhost:9092"
         topics_to_consume_msg_from: "topic_1, topic_2, ..."
         rich_console: optional for rich layout console.
+        graylog_address (optional): Graylog server address for eg. "localhost:12201"
 
 - List all available topics on a broker
 
