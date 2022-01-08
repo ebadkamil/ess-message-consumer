@@ -4,5 +4,6 @@ __pycache__
 pkg
 env
 dist
+!.github
 !.gitignore
 !.pre-commit-config.yaml
