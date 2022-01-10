@@ -1,4 +1,3 @@
-
 name: Ess-message-consumer
 
 on:
@@ -27,14 +26,13 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 ./ess_message_consumer --ignore=E501,E203,E402,W503,Q000,W293,E731
 
-    - name: Formatting with black
+    - name: Check formatting with black
       run: |
         black --check ./ess_message_consumer
 
-    - name: Imports with isort
+    - name: Check imports with isort
       run: |
         isort ./ess_message_consumer/ --check-only --profile black -v
 
