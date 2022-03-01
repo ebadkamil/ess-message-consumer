@@ -1,12 +1,13 @@
 import time
 import uuid
 from logging import Logger
+from threading import Thread
 from typing import Dict, List
 
 from confluent_kafka import Consumer  # type: ignore
 
 from ess_message_consumer.deserializer import DeserializerFactory
-from ess_message_consumer.utils import BoundOrderedDict, run_in_thread
+from ess_message_consumer.utils import BoundOrderedDict
 
 
 class EssMessageConsumer:
@@ -15,11 +16,14 @@ class EssMessageConsumer:
         self._topics = topics
         self._logger = logger
 
+        self._stop = False
+
         self._message_buffer: Dict[str, BoundOrderedDict] = {
             topic: BoundOrderedDict(maxlen=50) for topic in self._topics
         }
 
         self._consumers = {}
+        self._consumer_threads = {}
         try:
             for topic in self._topics:
                 conf = {
@@ -28,6 +32,9 @@ class EssMessageConsumer:
                     "group.id": uuid.uuid4(),
                 }
                 self._consumers[topic] = Consumer(conf)
+                self._consumer_threads[topic] = Thread(
+                    target=self._consume, args=(topic,)
+                )
         except Exception as error:
             self._logger.error(f"Unable to create consumers: {error}")
             raise
@@ -59,11 +66,10 @@ class EssMessageConsumer:
                 continue
 
             consumer.subscribe([topic])
-            self._consume(topic)
+            self._consumer_threads[topic].start()
 
-    @run_in_thread
     def _consume(self, topic: str):
-        while True:
+        while not self._stop:
             time.sleep(1)
             msg = self._consumers[topic].poll(1)
             if msg is None:
@@ -87,3 +93,12 @@ class EssMessageConsumer:
 
     def _update_message_buffer(self, topic, value):
         self._message_buffer[topic][time.time()] = value
+
+    def close(self):
+        self._stop = True
+        for _, thread in self._consumer_threads.items():
+            if thread and thread.is_alive():
+                thread.join()
+
+        for _, consumer in self._consumers.items():
+            consumer.close()
