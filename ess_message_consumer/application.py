@@ -32,8 +32,8 @@ class Application:
         self._console.update_console()
 
     def stop(self):
-        for consumer in self._ess_message_consumer.consumers:
-            consumer.close()
+        self._ess_message_consumer.close()
+        self._topic_watchdog.close()
 
 
 def start_application():
